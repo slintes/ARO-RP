@@ -44,9 +44,9 @@ func (m *manager) Install(ctx context.Context, sub *api.SubscriptionDocument, do
 		steps.Action(func(context.Context) error {
 			options := (&images.PullOptions{}).
 				WithQuiet(true).
-				WithPolicy("always").
-				WithUsername(m.pullSecret.Username).
-				WithPassword(m.pullSecret.Password)
+				WithPolicy("always")
+			//WithUsername(m.pullSecret.Username).
+			//WithPassword(m.pullSecret.Password)
 
 			_, err := images.Pull(m.conn, version.Properties.InstallerPullspec, options)
 			return err
