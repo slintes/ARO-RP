@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	arov1alpha1 "github.com/Azure/ARO-RP/pkg/operator/apis/aro.openshift.io/v1alpha1"
 	"github.com/Azure/ARO-RP/pkg/util/dynamichelper"
@@ -183,8 +184,10 @@ func (depl *deployer) IsReady(ctx context.Context, namespace, deploymentName str
 	err := depl.client.Get(ctx, types.NamespacedName{Namespace: namespace, Name: deploymentName}, d)
 	switch {
 	case kerrors.IsNotFound(err):
+		log.Log.Info("*** deployment not found")
 		return false, nil
 	case err != nil:
+		log.Log.Error(err, "*** failed to get deployment")
 		return false, err
 	}
 

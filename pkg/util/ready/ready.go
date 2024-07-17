@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	appsv1client "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // NodeIsReady returns true if a Node is considered ready
@@ -78,10 +79,13 @@ func DeploymentIsReady(d *appsv1.Deployment) bool {
 		specReplicas = *d.Spec.Replicas
 	}
 
-	return specReplicas == d.Status.AvailableReplicas &&
+	ready := specReplicas == d.Status.AvailableReplicas &&
 		specReplicas == d.Status.UpdatedReplicas &&
 		specReplicas == d.Status.Replicas &&
 		d.Generation == d.Status.ObservedGeneration
+
+	log.Log.Info("*** DeploymentIsReady", "ready", ready)
+	return ready
 }
 
 // CheckDeploymentIsReady returns a function which polls a Deployment and

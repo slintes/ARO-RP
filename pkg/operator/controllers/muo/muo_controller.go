@@ -78,9 +78,13 @@ func NewReconciler(log *logrus.Entry, client client.Client, dh dynamichelper.Int
 }
 
 func (r *Reconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
+
+	r.log.Info("*** reconciling")
+
 	instance := &arov1alpha1.Cluster{}
 	err := r.client.Get(ctx, types.NamespacedName{Name: arov1alpha1.SingletonClusterName}, instance)
 	if err != nil {
+		r.log.Errorf("*** failed to get ARO cluster: %v", err)
 		return reconcile.Result{}, err
 	}
 
@@ -146,6 +150,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.
 		// Deploy the MUO manifests and config
 		err = r.deployer.CreateOrUpdate(ctx, instance, config)
 		if err != nil {
+			r.log.Errorf("*** CreateOrUpdate failed: %v", err)
 			return reconcile.Result{}, err
 		}
 
@@ -187,6 +192,7 @@ func (r *Reconciler) SetupWithManager(mgr ctrl.Manager) error {
 	for _, i := range resources {
 		o, ok := i.(client.Object)
 		if ok {
+			r.log.Infof("*** owning %s: %s/%s", i.GetObjectKind().GroupVersionKind().Kind, o.GetNamespace(), o.GetName())
 			muoBuilder.Owns(o)
 		}
 	}

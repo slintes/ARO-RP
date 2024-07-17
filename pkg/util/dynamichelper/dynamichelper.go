@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	arov1alpha1 "github.com/Azure/ARO-RP/pkg/operator/apis/aro.openshift.io/v1alpha1"
 	"github.com/Azure/ARO-RP/pkg/util/cmp"
@@ -147,7 +148,7 @@ func (dh *dynamicHelper) ensureOne(ctx context.Context, new kruntime.Object) err
 			return err
 		}
 		candidate, changed, diff, err := dh.mergeWithLogic(acc.GetName(), gvk.GroupKind().String(), old, new)
-		if err != nil || !changed {
+		if err != nil || !changed || diff == "" {
 			return err
 		}
 		dh.log.Infof("Update %s: %s", keyFunc(gvk.GroupKind(), acc.GetNamespace(), acc.GetName()), diff)
@@ -282,12 +283,20 @@ func merge(old, new kruntime.Object) (kruntime.Object, bool, string, error) {
 		new.Status = old.Status
 	}
 
-	var diff string
+	// do not return an empty string in case we don't do a diff, it might be interpreted as "no change"
+	diff := "n/a"
 	if _, ok := old.(*corev1.Secret); !ok { // Don't show a diff if kind is Secret
 		diff = cmp.Diff(old, new)
 	}
 
-	return new, !reflect.DeepEqual(old, new), diff, nil
+	deq := reflect.DeepEqual(old, new)
+
+	log := log.Log.WithValues("ns", oldobjectmeta.GetNamespace(), "name", oldobjectmeta.GetName())
+	//log.Log.Info("*** merge", "old", fmt.Sprintf("%+v", old), "new", fmt.Sprintf("%+v", new))
+	log.Info("*** diff", "value", diff)
+	log.Info("*** deep equals", "value", deq)
+
+	return new, !deq, diff, nil
 }
 
 func copyAnnotation(dst, src *metav1.ObjectMeta, name string) {
